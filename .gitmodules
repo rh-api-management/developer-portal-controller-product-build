@@ -1,0 +1,3 @@
+[submodule "developer-portal-controller"]
+	path = developer-portal-controller
+	url = https://github.com/Kuadrant/developer-portal-controller

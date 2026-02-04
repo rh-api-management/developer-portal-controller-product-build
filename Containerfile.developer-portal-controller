@@ -1,0 +1,80 @@
+################################
+# Red Hat developer-portal-controller Operator
+################################
+
+FROM registry.redhat.io/ubi9/go-toolset:latest AS builder
+
+ENV BINARY_NAME="manager"
+
+WORKDIR /workspace
+# Copy the Go Modules manifests
+COPY developer-portal-controller-operator/go.mod go.mod
+COPY developer-portal-controller-operator/go.sum go.sum
+# cache deps before building and copying source so that we don't need to re-download as much
+# and so that source changes don't invalidate our downloaded layer
+RUN go mod download
+
+# Copy the go source
+COPY ./developer-portal-controller-operator/main.go main.go
+COPY ./developer-portal-controller-operator/api/ api/
+COPY ./developer-portal-controller-operator/controllers/ controllers/
+COPY ./developer-portal-controller-operator/pkg/ pkg/
+COPY ./developer-portal-controller-operator/LICENSE /licenses/LICENSE
+
+# Set environment variables for cross-compilation
+ARG TARGETARCH
+
+# Build arguments aligned with upstream
+ARG GIT_SHA
+ARG DIRTY
+ARG VERSION
+
+ENV GIT_SHA=${GIT_SHA:-unknown}
+ENV DIRTY=${DIRTY:-unknown}
+ENV developer-portal-controller_VERSION=${developer-portal-controller_VERSION:-unknown}
+
+# Build developer-portal-controller Operator
+RUN echo "Building with VERSION=${VERSION}, GIT_SHA=${GIT_SHA}, DIRTY=${DIRTY}" && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH:-$(go env GOARCH)} go build -a \
+    -ldflags "-X main.version=${VERSION} -X main.gitSHA=${GIT_SHA} -X main.dirty=${DIRTY}" \
+    -o ${BINARY_NAME} main.go
+
+
+FROM registry.redhat.io/ubi9/ubi-minimal:latest
+ARG VERSION
+ENV VERSION=${VERSION:-unknown}
+LABEL version="${VERSION}" \
+      com.redhat.component="developer-portal-controller" \
+      name="rhcl-1/developer-portal-controller-rhel9" \
+      cpe="cpe:/a:redhat:connectivity_link:1::el9" \
+      release="${developer-portal-controller_VERSION}" \
+      url="registry.redhat.io/rhcl-1/developer-portal-controller-rhel9" \
+      summary="The Developer Portal Controller provides Kubernetes Custom Resource Definitions (CRDs) for managing API products and API keys in a developer portal ecosystem. It integrates with Kuadrant and Gateway API to provide a complete API lifecycle management solution." \
+      description="The Developer Portal Controller provides Kubernetes Custom Resource Definitions (CRDs) for managing API products and API keys in a developer portal ecosystem. It integrates with Kuadrant and Gateway API to provide a complete API lifecycle management solution." \
+      io.k8s.description="The Developer Portal Controller provides Kubernetes Custom Resource Definitions (CRDs) for managing API products and API keys in a developer portal ecosystem. It integrates with Kuadrant and Gateway API to provide a complete API lifecycle management solution." \
+      io.k8s.display-name="Developer Portal Controller" \
+      io.openshift.expose-services="" \
+      io.openshift.tags="api" \
+      vendor="Red Hat, Inc."
+
+ENV OPERATOR_BINARY_NAME="manager" \
+  USER_UID=65532 \
+  USER_NAME=developer-portal-controller
+
+USER root
+
+# install operator binary
+COPY --from=builder /workspace/${OPERATOR_BINARY_NAME} /
+RUN chown ${USER_UID} /${OPERATOR_BINARY_NAME}
+
+COPY --from=builder licenses/LICENSE ./licenses/LICENSE
+
+# TODO: Install licenses
+# ENV LICENSES_DIR="/licenses/apicast-operator/"
+# RUN mkdir -p ${LICENSES_DIR}
+# COPY developer-portal-controller-operator/LICENSE ${LICENSES_DIR}
+# RUN chown ${USER_UID} ${LICENSES_DIR}/licenses
+
+ENTRYPOINT ["/manager"]
+
+USER ${USER_UID}
