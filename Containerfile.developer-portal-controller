@@ -9,18 +9,18 @@ ARG DEVELOPER_PORTAL_CONTROLLER_VERSION=${DEVELOPER_PORTAL_CONTROLLER_VERSION:-u
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
-COPY developer-portal-controller-operator/go.mod go.mod
-COPY developer-portal-controller-operator/go.sum go.sum
+COPY developer-portal-controller/go.mod go.mod
+COPY developer-portal-controller/go.sum go.sum
 # cache deps before building and copying source so that we don't need to re-download as much
 # and so that source changes don't invalidate our downloaded layer
 RUN go mod download
 
 # Copy the go source
 
-COPY ./developer-portal-controller-operator/cmd/main.go cmd/main.go
-COPY ./developer-portal-controller-operator/api/ api/
-COPY ./developer-portal-controller-operator/internal/ internal/
-COPY ./developer-portal-controller-operator/LICENSE /licenses/LICENSE
+COPY ./developer-portal-controller/cmd/main.go cmd/main.go
+COPY ./developer-portal-controller/api/ api/
+COPY ./developer-portal-controller/internal/ internal/
+COPY ./developer-portal-controller/LICENSE /licenses/LICENSE
 
 # Set environment variables for cross-compilation
 ARG TARGETARCH
@@ -30,9 +30,9 @@ ARG GIT_SHA=${GIT_SHA:-unknown}
 ARG DIRTY=${DIRTY:-unknown}
 ARG VERSION=${VERSION:-unknown}
 
-# Build developer-portal-controller Operator
 RUN echo "Building with VERSION=${VERSION}, GIT_SHA=${GIT_SHA}, DIRTY=${DIRTY}"
 
+# Build step
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH:-$(go env GOARCH)} go build -a \
      -ldflags "-X main.version=${VERSION} -X main.gitSHA=${GIT_SHA} -X main.dirty=${DIRTY}" \
 	 -o ${BINARY_NAME} cmd/main.go
@@ -53,15 +53,15 @@ LABEL version="${VERSION}" \
       io.openshift.tags="api" \
       vendor="Red Hat, Inc."
 
-ENV OPERATOR_BINARY_NAME="manager"
+ENV BINARY_NAME="manager"
 ENV USER_UID=65532
 ENV USER_NAME=developer-portal-controller
 
 USER root
 
-# install operator binary
-COPY --from=builder /workspace/${OPERATOR_BINARY_NAME} /
-RUN chown ${USER_UID} /${OPERATOR_BINARY_NAME}
+# install binary
+COPY --from=builder /workspace/${BINARY_NAME} /
+RUN chown ${USER_UID} /${BINARY_NAME}
 
 COPY --from=builder /licenses/LICENSE /licenses/LICENSE
 RUN chown ${USER_UID} /licenses/LICENSE
