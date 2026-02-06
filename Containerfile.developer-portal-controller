@@ -43,6 +43,7 @@ LABEL version="${VERSION}" \
       com.redhat.component="developer-portal-controller" \
       name="rhcl-1/developer-portal-controller-rhel9" \
       cpe="cpe:/a:redhat:connectivity_link:1::el9" \
+      maintainer="eastizle@redhat.com " \
       release="${DEVELOPER_PORTAL_CONTROLLER_VERSION}" \
       url="registry.redhat.io/rhcl-1/developer-portal-controller-rhel9" \
       summary="The Developer Portal Controller provides Kubernetes Custom Resource Definitions (CRDs) for managing API products and API keys in a developer portal ecosystem. It integrates with Kuadrant and Gateway API to provide a complete API lifecycle management solution." \
