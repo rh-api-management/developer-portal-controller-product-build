@@ -27,7 +27,7 @@ ARG TARGETARCH
 # Build arguments aligned with upstream
 ARG GIT_SHA=${GIT_SHA:-unknown}
 ARG DIRTY=${DIRTY:-unknown}
-ARG VERSION=${VERSION:-unknown}
+ARG VERSION=0.1.0-alpha3
 
 RUN echo "Building with VERSION=${VERSION}, GIT_SHA=${GIT_SHA}, DIRTY=${DIRTY}"
 
@@ -37,7 +37,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH:-$(go env GOARCH)} go build -a 
 	 -o ${BINARY_NAME} cmd/main.go
 
 FROM registry.redhat.io/ubi9/ubi-minimal:latest
-ARG VERSION=0.1.0
+ARG VERSION=0.1.0-alpha3
 LABEL version="${VERSION}" \
       com.redhat.component="developer-portal-controller" \
       name="rhcl-1/developer-portal-controller-rhel9" \
