@@ -32,9 +32,10 @@ ARG VERSION=0.2.1
 RUN echo "Building with VERSION=${VERSION}, GIT_SHA=${GIT_SHA}, DIRTY=${DIRTY}"
 
 # Build step
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH:-$(go env GOARCH)} go build -a \
-     -ldflags "-X main.version=${VERSION} -X main.gitSHA=${GIT_SHA} -X main.dirty=${DIRTY}" \
-	 -o ${BINARY_NAME} cmd/main.go
+RUN CGO_ENABLED=1 GOEXPERIMENT=strictfipsruntime GOOS=linux GOARCH=${TARGETARCH:-$(go env GOARCH)} go build -a \
+    -tags strictfipsruntime \
+    -ldflags "-X main.version=${VERSION} -X main.gitSHA=${GIT_SHA} -X main.dirty=${DIRTY}" \
+    -o ${BINARY_NAME} cmd/main.go
 
 FROM registry.redhat.io/ubi9/ubi-minimal:latest
 ARG VERSION=0.2.1
